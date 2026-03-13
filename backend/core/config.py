@@ -1,0 +1,22 @@
+# config.py
+import os
+from dotenv import load_dotenv
+from pathlib import Path
+
+env_path = 'backend/.env'
+load_dotenv(env_path)
+
+
+class Settings:
+    PROJECT_NAME: str = "Cafe"
+    PROJECT_VERSION: str = "1.0.0"
+
+    SQL_HOSTNAME: str = os.getenv("SQL_HOSTNAME")
+    SQL_USER: str = os.getenv("SQL_USER")
+    SQL_PASSWORD = os.getenv("SQL_PASSWORD")
+    SQL_DB: str = os.getenv("SQL_DB")
+    SQL_PORT: str = os.getenv("SQL_PORT")
+    DATABASE_URL = f"postgresql://{SQL_USER}:{SQL_PASSWORD}@{SQL_HOSTNAME}:{SQL_PORT}/{SQL_DB}"
+
+
+settings = Settings()
