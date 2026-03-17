@@ -3,7 +3,8 @@ import os
 from dotenv import load_dotenv
 from pathlib import Path
 
-env_path = 'backend/.env'
+# env_path = 'backend/.env'
+env_path = 'D:/для работы/projects/study/cafe/backend/.env'
 load_dotenv(env_path)
 
 
@@ -16,7 +17,8 @@ class Settings:
     SQL_PASSWORD = os.getenv("SQL_PASSWORD")
     SQL_DB: str = os.getenv("SQL_DB")
     SQL_PORT: str = os.getenv("SQL_PORT")
-    DATABASE_URL = f"postgresql://{SQL_USER}:{SQL_PASSWORD}@{SQL_HOSTNAME}:{SQL_PORT}/{SQL_DB}"
+    DATABASE_URL = f"mysql+pymysql://{SQL_USER}:{SQL_PASSWORD}@{SQL_HOSTNAME}:{SQL_PORT}/{SQL_DB}"
+    # postgresql mysql+pymysql
 
 
 settings = Settings()
