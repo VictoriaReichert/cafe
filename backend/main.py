@@ -22,6 +22,12 @@ app = FastAPI(title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION)
 #         db.close()
 
 
+# @app.get("/cafe", response_model=List[CoffeeResponse])
+# def get_all_coffee(db: Session = Depends(get_db())):
+#     coffee_list = db.query(Coffee).all()
+#     return coffee_list
+
+
 class MenuItem(BaseModel):
     id: int = Field(ge=1)
     name: str = Field(max_length=20)
@@ -71,10 +77,7 @@ def add_to_menu(item: MenuItem):
     return {"success": True}
 
 
-# @app.get("/cafe", response_model=List[CoffeeResponse])
-# def get_all_coffee(db: Session = Depends(get_db())):
-#     coffee_list = db.query(Coffee).all()
-#     return coffee_list
+
 #
 #
 # print(settings.PROJECT_NAME)
