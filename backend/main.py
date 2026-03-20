@@ -5,27 +5,25 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from backend.core.config import settings
-# from backend.db.session import SessionLocal
-# from backend.models import Coffee
-# from backend.schemas import CoffeeResponse
+from backend.db.session import get_db
 
 
 app = FastAPI(title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION)
 
 
-# Dependency для получения сессии БД
-# def get_db():
-#     db = SessionLocal
-#     try:
-#         yield db
-#     finally:
-#         db.close()
-
-
-# @app.get("/cafe", response_model=List[CoffeeResponse])
-# def get_all_coffee(db: Session = Depends(get_db())):
-#     coffee_list = db.query(Coffee).all()
-#     return coffee_list
+@app.get("/menu")
+def menu():
+    result = get_db("SELECT * FROM coffee")
+    items.clear()
+    for row in result:
+        items.append(
+            {
+                "id": len(items)+1,
+                "name": row[1],
+                "price": row[2]
+            }
+        )
+    return items
 
 
 class MenuItem(BaseModel):
@@ -52,11 +50,6 @@ def root():
     }
 
 
-@app.get("/menu")
-def menu():
-    return items
-
-
 @app.get("/menu/{item_id}")
 def menu_item(item_id: int):
     for item in items:
@@ -75,9 +68,3 @@ def add_to_menu(item: MenuItem):
         }
     )
     return {"success": True}
-
-
-
-#
-#
-# print(settings.PROJECT_NAME)

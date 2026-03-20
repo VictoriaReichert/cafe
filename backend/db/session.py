@@ -6,22 +6,24 @@ from sqlalchemy import table, column, select
 from backend.core.config import settings
 
 SQLALCHEMY_DB_URL = settings.DATABASE_URL
-print("Database URL is ", SQLALCHEMY_DB_URL)
+# print("Database URL is ", SQLALCHEMY_DB_URL)
 # print(settings.SQL_PORT)
 
 
-def get_db():
-    print("Connecting...")
+def get_db(query: str):
+    # print("Connecting...")
     try:
         engine = create_engine(SQLALCHEMY_DB_URL)
 
-        print("We're in")
-        stmt = text("SELECT * FROM coffee")
+        # print("We're in")
+        stmt = text(query)
         with engine.connect() as con:
-            print(con.execute(stmt).fetchall())
+            return con.execute(stmt).fetchall()
 
     except Exception as ex:
         print("Ошибка", ex)
 
 
-get_db()
+res = get_db("SELECT * FROM coffee")
+print(res)
+
