@@ -1,11 +1,19 @@
 # main.py - апи
+from typing import Annotated
+
 from fastapi import FastAPI, HTTPException, Depends
-from pydantic import BaseModel, Field
-import mysql.connector
-from backend.core.config import settings
 from fastapi.middleware.cors import CORSMiddleware
 
-cafe_db = mysql.connector.connect(  # to do
+from pydantic import BaseModel, Field
+
+import mysql.connector
+from sqlalchemy import create_engine, select, text
+from sqlalchemy.orm import sessionmaker, Session, DeclarativeBase, Mapped, mapped_column
+
+from backend.core.config import settings
+
+
+cafe_db = mysql.connector.connect(  # to do отдельный файл
     user='p',
     password='p',
     host='p',
@@ -13,12 +21,33 @@ cafe_db = mysql.connector.connect(  # to do
 )
 cursor = cafe_db.cursor()
 
-# Ещё один способ бд
+# Ещё один способ подключения бд (с сессиями)------------------------------------------------
+SQLALCHEMY_DB_URL = settings.DATABASE_URL
+print("Database URL is ", SQLALCHEMY_DB_URL)
+engine = create_engine(SQLALCHEMY_DB_URL)
+new_session = sessionmaker(engine, expire_on_commit=False)
 
+class Base(DeclarativeBase):
+    pass
+
+class MenuModel(Base):
+    __tablename__ = "coffee"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str]
+    price: Mapped[int]
+
+
+def get_session():
+    with new_session() as session:
+        yield session
+
+
+SessionDep = Annotated[Session, Depends(get_session)]
 
 
 app = FastAPI(title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION)
-app.add_middleware(  # Прописываем каким адресам разрешено обращаться к нашему апи (из-за CORS)
+app.add_middleware(  # Прописываем каким адресам разрешено обращаться к нашему апи (из-за CORS в браузере)
     CORSMiddleware,
     allow_origins=["http://localhost:8080"]
 )
@@ -41,20 +70,25 @@ def root():
 
 
 @app.get("/menu", summary="Меню кафе (cRud)")
-def menu():
-    select_query = "SELECT * FROM coffee"
-    cursor.execute(select_query)
-    results = cursor.fetchall()
-    items = []
-    for row in results:
-        items.append(
-            {
-                "id": row[0],
-                "name": row[1],
-                "price": row[2]
-            }
-        )
-    return items
+def menu(session: SessionDep):
+    #query = text("SELECT * FROM coffee")
+    query = select(MenuModel)
+    result = session.execute(query)
+    return result.scalars().all()
+
+    # select_query = "SELECT * FROM coffee"
+    # cursor.execute(select_query)
+    # results = cursor.fetchall()
+    # items = []
+    # for row in results:
+    #     items.append(
+    #         {
+    #             "id": row[0],
+    #             "name": row[1],
+    #             "price": row[2]
+    #         }
+    #     )
+    # return items
 
 
 @app.get("/menu/{item_id}", summary="Одна позиция меню")
