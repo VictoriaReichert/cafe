@@ -12,7 +12,6 @@ from sqlalchemy.orm import sessionmaker, Session, DeclarativeBase, Mapped, mappe
 
 from backend.core.config import settings
 
-
 cafe_db = mysql.connector.connect(  # to do отдельный файл
     user='p',
     password='p',
@@ -23,12 +22,14 @@ cursor = cafe_db.cursor()
 
 # Ещё один способ подключения бд (с сессиями)------------------------------------------------
 SQLALCHEMY_DB_URL = settings.DATABASE_URL
-print("Database URL is ", SQLALCHEMY_DB_URL)
+# print("Database URL is ", SQLALCHEMY_DB_URL)
 engine = create_engine(SQLALCHEMY_DB_URL)
 new_session = sessionmaker(engine, expire_on_commit=False)
 
+
 class Base(DeclarativeBase):
     pass
+
 
 class MenuModel(Base):
     __tablename__ = "coffee"
@@ -40,11 +41,10 @@ class MenuModel(Base):
 
 def get_session():
     with new_session() as session:
-        yield session
+        yield session  # сессия открывается на время выполнения ручки в которой она вызывается
 
 
 SessionDep = Annotated[Session, Depends(get_session)]
-
 
 app = FastAPI(title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION)
 app.add_middleware(  # Прописываем каким адресам разрешено обращаться к нашему апи (из-за CORS в браузере)
@@ -71,24 +71,9 @@ def root():
 
 @app.get("/menu", summary="Меню кафе (cRud)")
 def menu(session: SessionDep):
-    #query = text("SELECT * FROM coffee")
     query = select(MenuModel)
     result = session.execute(query)
     return result.scalars().all()
-
-    # select_query = "SELECT * FROM coffee"
-    # cursor.execute(select_query)
-    # results = cursor.fetchall()
-    # items = []
-    # for row in results:
-    #     items.append(
-    #         {
-    #             "id": row[0],
-    #             "name": row[1],
-    #             "price": row[2]
-    #         }
-    #     )
-    # return items
 
 
 @app.get("/menu/{item_id}", summary="Одна позиция меню")
@@ -104,23 +89,22 @@ def item(item_id: int):
 
 
 @app.post("/menu", summary="Добавление позиции (Crud)")
-def add_item(item: MenuAddSchema):
-    insert_query = """
-        INSERT INTO coffee (name, price)
-        VALUES (%s, %s)
-        """
-    values = (item.name, item.price)
-    try:
-        cursor.execute(insert_query, values)
-        cafe_db.commit()
-    except mysql.connector.Error as err:
-        raise HTTPException(status_code=400, detail=f"Error: {err}")
-
-    return {"message": "Позиция добавлена успешно"}
+def add_item(item: MenuAddSchema, session: SessionDep):
+    new_item = MenuModel(
+        name=item.name,
+        price=item.price
+    )
+    session.add(new_item)
+    session.commit()
+    return {
+        "message": "Позиция успешно добавлена"
+    }
 
 
 @app.delete("/menu", summary="Удаление позиции (cruD)")
-def delete_item(item_id: int):
+def delete_item(item_id: int, session: SessionDep):
+    # session.delete(item_id)
+    # session.commit()
     delete_query = """
         DELETE FROM coffee WHERE id = %s
         """
@@ -129,7 +113,9 @@ def delete_item(item_id: int):
     if cursor.rowcount == 0:
         raise HTTPException(status_code=400, detail="Такой позиции нет")
 
-    return {"message": "Позиция удалена успешно"}
+    return {
+        "message": "Позиция успешно удалена"
+    }
 
 
 @app.put("/menu", summary="Замена позиции (crUd)")
