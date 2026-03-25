@@ -3,8 +3,8 @@ import os
 from dotenv import load_dotenv
 from pathlib import Path
 
-# env_path = 'backend/.env'
-env_path = 'D:/для работы/projects/study/cafe/backend/.env'
+# env_path = '.env'
+env_path = 'D:\\для работы\\projects\\study\\cafe\\src\\.env'  # to do слишком длинный путь
 load_dotenv(env_path)
 
 
@@ -22,3 +22,5 @@ class Settings:
 
 
 settings = Settings()
+
+# print(settings.DATABASE_URL)
