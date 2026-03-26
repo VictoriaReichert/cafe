@@ -1,20 +1,11 @@
-from sqlalchemy import select
+# to do апи эндпоинты не должны содеражть логику, вынести в отдельный класс
+from sqlalchemy import select, delete, update
 from fastapi import HTTPException, APIRouter
 from src.api.dependencies import SessionDep
 from src.models.menu import MenuModel
 from src.schemas.menu import MenuSchema, MenuAddSchema
-import mysql.connector
 
 router = APIRouter()
-
-
-cafe_db = mysql.connector.connect(  # to do отдельный файл УБРАТЬ
-    user='root',
-    password='059213369',
-    host='127.0.0.1',
-    database='cafe'
-)
-cursor = cafe_db.cursor()
 
 
 @router.get("/", summary="Главная страница")
@@ -33,12 +24,12 @@ coffee_menu_db = 'coffee'  # to do заменить название бд на �
 
 
 @router.get("/menu/{item_id}", summary="Одна позиция меню")
-def item(item_id: int):
-    select_query = "SELECT * FROM coffee WHERE id = %s"
-    cursor.execute(select_query, (item_id,))
-    result = cursor.fetchone()
-    if result:
-        return result
+def item(item_id: int, session: SessionDep):
+    query = select(MenuModel).where(MenuModel.id == item_id)
+    result = session.execute(query)
+    res = session.execute(query)
+    if res.fetchone():  # to do доделать проверку (выбор с несуществующим id)
+        return result.scalars().one()
     else:
         raise HTTPException(status_code=404,
                             detail='В меню нет такой позиции')  # to do заменить коды ошибок на более подходящие
@@ -59,46 +50,33 @@ def add_item(item: MenuAddSchema, session: SessionDep):
 
 @router.delete("/menu", summary="Удаление позиции (cruD)")
 def delete_item(item_id: int, session: SessionDep):
-    # session.delete(item_id)
-    # session.commit()
-    delete_query = """
-        DELETE FROM coffee WHERE id = %s
-        """
-    cursor.execute(delete_query, (item_id,))
-    cafe_db.commit()
-    if cursor.rowcount == 0:
+    query = delete(MenuModel).where(MenuModel.id == item_id)
+    result = session.execute(query)
+    session.commit()
+    if result.rowcount == 0:
         raise HTTPException(status_code=400, detail="Такой позиции нет")
-
     return {
         "message": "Позиция успешно удалена"
     }
 
 
 @router.put("/menu", summary="Замена позиции (crUd)")
-def replace_item(item: MenuSchema):
-    replace_query = """
-        UPDATE coffee SET name = %s, price = %s WHERE id = %s
-    """
-    values = (item.name, item.price, item.id)
-    try:
-        cursor.execute(replace_query, values)
-        cafe_db.commit()
-    except mysql.connector.errors as err:
-        raise HTTPException(status_code=400, detail=f"Error: {err}")
-
-    return {"message": "Позиция заменена успешно"}
+def replace_item(item: MenuSchema, session: SessionDep):
+    query = update(MenuModel).values(name=item.name, price=item.price).where(MenuModel.id == item.id)
+    result = session.execute(query)
+    session.commit()
+    if result.rowcount == 0:
+        raise HTTPException(status_code=400, detail="Такой позиции нет")
+    else:
+        return {"message": "Позиция заменена успешно"}
 
 
 @router.patch("/menu", summary="Изменение цены позиции (crUd)")
-def update_item_price(id: int, price: int):  # to do заменить на что-то такое 'id: MenuItems.id'
-    update_query = """
-        UPDATE coffee SET price = %s WHERE id = %s
-    """
-    values = (price, id)
-    try:
-        cursor.execute(update_query, values)
-        cafe_db.commit()
-    except mysql.connector.errors as err:
-        raise HTTPException(status_code=400, detail=f"Error: {err}")
-
-    return {"message": "Цена обновлена успешно"}
+def update_item_price(id: int, new_price: int, session: SessionDep):  # to do заменить на что-то такое 'id: MenuItems.id'
+    query = update(MenuModel).values(price=new_price).where(MenuModel.id == id)
+    result = session.execute(query)
+    session.commit()
+    if result.rowcount == 0:
+        raise HTTPException(status_code=400, detail="Такой позиции нет")
+    else:
+        return {"message": "Цена заменена успешно"}
