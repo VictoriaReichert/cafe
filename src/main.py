@@ -11,6 +11,7 @@ app = FastAPI(title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION)
 app.include_router(main_router) # матрёшка
 app.add_middleware(  # Прописываем каким адресам разрешено обращаться к нашему апи (из-за CORS в браузере)
     CORSMiddleware,
-    allow_origins=["http://localhost:8080"]
+    allow_origins=["http://localhost:8080"],
+    allow_methods=["*"]  # Разрешаем все методы (GET, POST, PUT, DELETE и т.д.)
 )
 
